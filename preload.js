@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('ngbe', {
   getPlayerInfo: (pseudo) => ipcRenderer.invoke('ng-get-player', pseudo),
   getPlayerCount: () => ipcRenderer.invoke('ng-get-playercount'),
   getArticles: () => ipcRenderer.invoke('get-articles'),
+  checkForUpdates: () => ipcRenderer.invoke('check-update'),
   skinFaceUrl,
   skinFace3dUrl,
 });

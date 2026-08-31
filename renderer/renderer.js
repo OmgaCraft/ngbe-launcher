@@ -54,6 +54,33 @@ function formatDate(value) {
   });
 }
 
+async function runUpdateCheck(button) {
+  if (button) button.classList.add('spinning');
+  try {
+    const result = await window.ngbe.checkForUpdates();
+    const banner = document.getElementById('update-banner');
+    const text = document.getElementById('update-banner-text');
+    const downloadBtn = document.getElementById('update-download-btn');
+    if (result.hasUpdate) {
+      text.textContent = `Nouvelle version disponible : ${result.latestVersion} (actuelle : ${result.currentVersion})`;
+      downloadBtn.onclick = () => window.ngbe.openExternal(result.downloadUrl);
+      banner.hidden = false;
+    } else {
+      banner.hidden = true;
+    }
+  } catch (err) {
+    console.error('[update-check]', err);
+  } finally {
+    if (button) button.classList.remove('spinning');
+  }
+}
+
+safe('update-btn', () => {
+  const btn = document.getElementById('update-btn');
+  btn.addEventListener('click', () => runUpdateCheck(btn));
+  runUpdateCheck(null);
+});
+
 safe('solo-btn', () => {
   document.getElementById('solo-btn').addEventListener('click', () => {
     window.ngbe.launchUri('minecraft://');

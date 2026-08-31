@@ -4,6 +4,41 @@ const fs = require('fs');
 
 const ARTICLES_URL = 'https://nationsglory.fr/articles';
 const ARTICLES_CACHE_MS = 5 * 60 * 1000;
+const GITHUB_REPO = 'OmgaCraft/ngbe-launcher';
+
+function parseVersion(tag) {
+  return (tag || '').replace(/^v/i, '').split('.').map((n) => parseInt(n, 10) || 0);
+}
+
+function isNewerVersion(latest, current) {
+  const a = parseVersion(latest);
+  const b = parseVersion(current);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] || 0) - (b[i] || 0);
+    if (diff !== 0) return diff > 0;
+  }
+  return false;
+}
+
+async function checkForUpdates() {
+  const currentVersion = app.getVersion();
+  const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`, {
+    headers: { accept: 'application/vnd.github+json' },
+  });
+  if (!res.ok) {
+    throw new Error(`GitHub a répondu ${res.status}`);
+  }
+  const release = await res.json();
+  const latestVersion = release.tag_name || '';
+  const asset = (release.assets || []).find((a) => a.name.endsWith('.exe'));
+  return {
+    currentVersion,
+    latestVersion,
+    hasUpdate: isNewerVersion(latestVersion, currentVersion),
+    releaseUrl: release.html_url,
+    downloadUrl: asset ? asset.browser_download_url : release.html_url,
+  };
+}
 
 let articlesCache = { data: null, ts: 0 };
 
@@ -111,6 +146,10 @@ ipcMain.handle('ng-get-playercount', async () => {
 
 ipcMain.handle('get-articles', async () => {
   return scrapeArticles();
+});
+
+ipcMain.handle('check-update', async () => {
+  return checkForUpdates();
 });
 
 app.whenReady().then(createWindow);
