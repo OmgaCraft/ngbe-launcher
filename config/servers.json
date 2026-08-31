@@ -1,0 +1,20 @@
+{
+  "relay": { "baseUrl": "https://ngbe-launcher-relay-production.up.railway.app" },
+  "hub": {
+    "v2": { "name": "HUB V2", "address": "ngbe.gg", "port": 19132 },
+    "v1": { "name": "HUB V1", "address": "bedrock.nationsglory.fr", "port": 19132 }
+  },
+  "ngIsland": { "name": "NG Island", "address": "bedrock.nationsglory.fr", "port": 19112 },
+  "links": {
+    "wiki": { "name": "Wiki", "url": "https://wiki.nationsglory.fr/fr/" },
+    "codex": { "name": "Codex Bedrock", "url": "https://wiki.nationsglory.fr/fr/article/le-reglement-bedrock-codex-1ssj6k9/" }
+  },
+  "servers": [
+    { "name": "Iris", "address": "", "port": null, "color": "#c600d6", "apiKey": null },
+    { "name": "Alpha", "address": "alpha.nationsglory.fr", "port": 19100, "color": "#EE3300", "apiKey": "alpha" },
+    { "name": "Sigma", "address": "sigma.nationsglory.fr", "port": 19102, "color": "#000000", "apiKey": "sigma" },
+    { "name": "Omega", "address": "omega.nationsglory.fr", "port": 19103, "color": "#565656", "apiKey": "omega" },
+    { "name": "Delta", "address": "delta.nationsglory.fr", "port": 19101, "color": "#eeba03", "apiKey": "delta" },
+    { "name": "Epsilon", "address": "epsilon.nationsglory.fr", "port": 19104, "color": "#3946bc", "apiKey": "epsilon" }
+  ]
+}

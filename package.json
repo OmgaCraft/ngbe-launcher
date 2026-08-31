@@ -1,0 +1,39 @@
+{
+  "name": "ngbe-launcher",
+  "version": "1.0.0",
+  "description": "Launcher pour Minecraft Bedrock - NGBE",
+  "main": "main.js",
+  "author": "NGBE Launcher",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node scripts/make-icon.js",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^26.15.3",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.4"
+  },
+  "build": {
+    "appId": "fr.ngbe.launcher",
+    "productName": "NGBE Launcher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "config/**/*"
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": ["portable"],
+      "compression": "normal"
+    },
+    "portable": {
+      "artifactName": "NGBE-Launcher.exe"
+    }
+  }
+}

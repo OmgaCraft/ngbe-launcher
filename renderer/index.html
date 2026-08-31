@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>NGBE Launcher</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="layout">
+
+    <main class="content">
+      <header class="title-block">
+        <h1>NGBE Launcher</h1>
+        <p class="subtitle">Minecraft Bedrock — NationsGlory</p>
+        <button id="solo-btn" class="solo-button">Mode Solo</button>
+      </header>
+
+      <section class="card-row">
+        <div class="card hub-card">
+          <h3>HUB</h3>
+          <button class="hub-btn" id="hub-v2-btn">HUB V2</button>
+          <button class="hub-btn" id="hub-v1-btn">HUB V1</button>
+        </div>
+        <div class="card hub-card" id="codex-card">
+          <h3>Codex / Wiki</h3>
+          <button class="hub-btn" id="wiki-btn">Wiki</button>
+          <button class="hub-btn" id="codex-btn">Codex Bedrock</button>
+        </div>
+        <div class="card" id="ngisland-card">
+          <h3>NG Island</h3>
+          <p class="card-desc">Freebuild — Mode créatif</p>
+          <button class="card-action" id="ngisland-btn">Rejoindre</button>
+        </div>
+      </section>
+
+      <section class="card-row bottom-row">
+        <div class="card news-card">
+          <h3>Actualités</h3>
+          <div id="news-list" class="news-list"></div>
+        </div>
+        <div class="card info-card">
+          <h3>Info</h3>
+          <div id="info-edit" class="info-edit">
+            <span class="info-field-label">Pseudo</span>
+            <div class="pseudo-row">
+              <input id="pseudo-input" type="text" placeholder="Ton pseudo" />
+              <button id="pseudo-confirm" class="confirm-btn" title="Valider">✓</button>
+            </div>
+          </div>
+          <div id="info-summary" class="info-summary" hidden>
+            <div class="profile-header">
+              <img id="skin-face" class="skin-face" alt="" />
+              <div class="profile-heading">
+                <span id="profile-username" class="profile-username"></span>
+                <span id="profile-crown" class="profile-crown" title="Compte Prime" hidden>👑</span>
+              </div>
+            </div>
+            <p id="profile-description" class="profile-description"></p>
+            <p class="profile-last-connection">Dernière connexion : <span id="profile-last-connection">—</span></p>
+            <div id="profile-servers" class="profile-servers"></div>
+          </div>
+          <p class="last-server">Dernier serveur : <span id="last-server">aucun</span></p>
+          <button id="info-gear" class="gear-btn" title="Modifier le profil" hidden>⚙</button>
+        </div>
+      </section>
+    </main>
+
+    <aside class="sidebar servers-panel">
+      <h2>Serveurs</h2>
+      <div id="servers-list" class="servers-list"></div>
+    </aside>
+
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
