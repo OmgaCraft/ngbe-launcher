@@ -21,9 +21,14 @@ function rememberServer(name) {
   if (summary && !summary.hidden) refreshProfile();
 }
 
-function joinServer(name, address, port) {
+function launchServer(address, port) {
   if (!address) return;
   window.ngbe.launchUri(connectUri(address, port));
+}
+
+function joinServer(name, address, port) {
+  if (!address) return;
+  launchServer(address, port);
   rememberServer(name);
 }
 
@@ -84,7 +89,6 @@ safe('update-btn', () => {
 safe('solo-btn', () => {
   document.getElementById('solo-btn').addEventListener('click', () => {
     window.ngbe.launchUri('minecraft://');
-    rememberServer('Solo');
   });
 });
 
@@ -92,7 +96,7 @@ safe('hub-v2-btn', () => {
   if (config.hub && config.hub.v2) {
     document.getElementById('hub-v2-btn').addEventListener('click', () => {
       const s = config.hub.v2;
-      joinServer(s.name, s.address, s.port);
+      launchServer(s.address, s.port);
     });
   }
 });
@@ -101,7 +105,7 @@ safe('hub-v1-btn', () => {
   if (config.hub && config.hub.v1) {
     document.getElementById('hub-v1-btn').addEventListener('click', () => {
       const s = config.hub.v1;
-      joinServer(s.name, s.address, s.port);
+      launchServer(s.address, s.port);
     });
   }
 });
@@ -110,7 +114,7 @@ safe('ngisland-btn', () => {
   if (config.ngIsland) {
     document.getElementById('ngisland-btn').addEventListener('click', () => {
       const s = config.ngIsland;
-      joinServer(s.name, s.address, s.port);
+      launchServer(s.address, s.port);
     });
   }
 });
