@@ -92,6 +92,46 @@ const EXTERNAL_LAUNCHER_LOGOS = {
   flarial: 'assets/flarial.svg',
 };
 
+async function openExternalLauncherSettings() {
+  const launchers = await refreshExternalLauncherIcons();
+  const rowsBox = document.getElementById('external-settings-rows');
+  rowsBox.innerHTML = '';
+  launchers.forEach((launcher) => {
+    const row = document.createElement('div');
+    row.className = 'external-settings-row';
+    const prefill = launcher.manualPath || launcher.suggestedPath || '';
+    row.innerHTML = `
+      <span class="launcher-label">${launcher.name}</span>
+      <input type="text" placeholder="Chemin non défini" value="${prefill}" data-id="${launcher.id}" />
+      <button class="confirm-btn row-save-btn" title="Enregistrer">✓</button>
+      <button class="confirm-btn secondary row-browse-btn" title="Parcourir">📁</button>
+    `;
+    const input = row.querySelector('input');
+    const saveBtn = row.querySelector('.row-save-btn');
+    const browseBtn = row.querySelector('.row-browse-btn');
+
+    async function savePath(value) {
+      await window.ngbe.setExternalLauncherPath(launcher.id, value.trim());
+      refreshExternalLauncherIcons();
+    }
+
+    saveBtn.addEventListener('click', () => savePath(input.value));
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') savePath(input.value);
+    });
+
+    browseBtn.addEventListener('click', async () => {
+      const picked = await window.ngbe.pickExecutablePath();
+      if (!picked) return;
+      input.value = picked;
+      await savePath(picked);
+    });
+
+    rowsBox.appendChild(row);
+  });
+  document.getElementById('external-settings-modal').hidden = false;
+}
+
 async function refreshExternalLauncherIcons() {
   const box = document.getElementById('external-launcher-icons');
   try {
@@ -100,12 +140,18 @@ async function refreshExternalLauncherIcons() {
     launchers.forEach((launcher) => {
       const icon = document.createElement('div');
       icon.className = 'external-launcher-icon' + (launcher.installed ? ' installed' : '');
-      icon.title = `${launcher.name}${launcher.installed ? ' (détecté)' : ' (non détecté)'}`;
+      icon.title = `${launcher.name}${launcher.installed ? ' (détecté)' : ' (non détecté)'} — clique pour lancer`;
       if (EXTERNAL_LAUNCHER_LOGOS[launcher.id]) {
         icon.innerHTML = `<img src="${EXTERNAL_LAUNCHER_LOGOS[launcher.id]}" alt="" />`;
       } else {
         icon.textContent = launcher.name.slice(0, 2).toUpperCase();
       }
+      icon.addEventListener('click', async () => {
+        const result = await window.ngbe.launchExternalLauncher(launcher.id);
+        if (!result.ok) {
+          openExternalLauncherSettings();
+        }
+      });
       box.appendChild(icon);
     });
     return launchers;
@@ -118,50 +164,9 @@ async function refreshExternalLauncherIcons() {
 safe('external-launchers', () => {
   refreshExternalLauncherIcons();
 
-  const modal = document.getElementById('external-settings-modal');
-  const rowsBox = document.getElementById('external-settings-rows');
-
-  async function openSettings() {
-    const launchers = await refreshExternalLauncherIcons();
-    rowsBox.innerHTML = '';
-    launchers.forEach((launcher) => {
-      const row = document.createElement('div');
-      row.className = 'external-settings-row';
-      row.innerHTML = `
-        <span class="launcher-label">${launcher.name}</span>
-        <input type="text" placeholder="Chemin non défini" value="${launcher.manualPath || ''}" data-id="${launcher.id}" />
-        <button class="confirm-btn row-save-btn" title="Enregistrer">✓</button>
-        <button class="confirm-btn secondary row-browse-btn" title="Parcourir">📁</button>
-      `;
-      const input = row.querySelector('input');
-      const saveBtn = row.querySelector('.row-save-btn');
-      const browseBtn = row.querySelector('.row-browse-btn');
-
-      async function savePath(value) {
-        await window.ngbe.setExternalLauncherPath(launcher.id, value.trim());
-        refreshExternalLauncherIcons();
-      }
-
-      saveBtn.addEventListener('click', () => savePath(input.value));
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') savePath(input.value);
-      });
-
-      browseBtn.addEventListener('click', async () => {
-        const picked = await window.ngbe.pickExecutablePath();
-        if (!picked) return;
-        input.value = picked;
-        await savePath(picked);
-      });
-
-      rowsBox.appendChild(row);
-    });
-    modal.hidden = false;
-  }
-
-  document.getElementById('external-settings-btn').addEventListener('click', openSettings);
+  document.getElementById('external-settings-btn').addEventListener('click', openExternalLauncherSettings);
   document.getElementById('close-settings-btn').addEventListener('click', () => {
-    modal.hidden = true;
+    document.getElementById('external-settings-modal').hidden = true;
   });
   document.getElementById('settings-update-btn').addEventListener('click', () => {
     runUpdateCheck(document.getElementById('update-btn'));

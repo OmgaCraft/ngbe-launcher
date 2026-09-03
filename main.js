@@ -114,20 +114,33 @@ const UNINSTALL_KEYS = [
   'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
 ];
 
-async function queryRegistryDisplayNames() {
-  const names = [];
+function cleanDisplayIconPath(value) {
+  if (!value) return '';
+  // DisplayIcon is often "C:\...\app.exe,0" — strip a trailing ",<index>"
+  const withoutIndex = value.replace(/,\s*-?\d+$/, '').trim().replace(/^"|"$/g, '');
+  return withoutIndex.toLowerCase().endsWith('.exe') ? withoutIndex : '';
+}
+
+async function queryRegistryEntries() {
+  const entries = [];
   for (const key of UNINSTALL_KEYS) {
     try {
       const { stdout } = await execFileAsync('reg', ['query', key, '/s']);
-      const matches = stdout.match(/DisplayName\s+REG_SZ\s+.+/g) || [];
-      matches.forEach((line) => {
-        names.push(line.replace(/DisplayName\s+REG_SZ\s+/, '').trim().toLowerCase());
+      const blocks = stdout.split(/\r?\n\r?\n/);
+      blocks.forEach((block) => {
+        const displayNameMatch = block.match(/DisplayName\s+REG_SZ\s+(.+)/);
+        if (!displayNameMatch) return;
+        const displayIconMatch = block.match(/DisplayIcon\s+REG_SZ\s+(.+)/);
+        entries.push({
+          displayName: displayNameMatch[1].trim(),
+          displayIcon: displayIconMatch ? displayIconMatch[1].trim() : '',
+        });
       });
     } catch (err) {
       // key missing or inaccessible — ignore and continue
     }
   }
-  return names;
+  return entries;
 }
 
 function externalLaunchersConfigPath() {
@@ -148,19 +161,32 @@ function saveExternalPaths(paths) {
 
 async function detectExternalLaunchers() {
   const manualPaths = loadExternalPaths();
-  const registryNames = await queryRegistryDisplayNames();
+  const registryEntries = await queryRegistryEntries();
 
   return EXTERNAL_LAUNCHERS.map((launcher) => {
     const manualPath = manualPaths[launcher.id] || '';
     const manualExists = manualPath ? fs.existsSync(manualPath) : false;
-    const foundInRegistry = registryNames.some((name) =>
-      launcher.matches.some((m) => name.includes(m))
-    );
+
+    const matchingEntry = registryEntries.find((entry) => {
+      const name = entry.displayName.toLowerCase();
+      return launcher.matches.some((m) => name.includes(m));
+    });
+
+    let suggestedPath = '';
+    if (matchingEntry) {
+      const iconPath = cleanDisplayIconPath(matchingEntry.displayIcon);
+      if (iconPath && fs.existsSync(iconPath)) {
+        suggestedPath = iconPath;
+      }
+    }
+
     return {
       id: launcher.id,
       name: launcher.name,
-      installed: manualExists || foundInRegistry,
+      installed: manualExists || Boolean(matchingEntry),
       manualPath,
+      suggestedPath,
+      launchablePath: manualExists ? manualPath : suggestedPath,
     };
   });
 }
@@ -232,6 +258,19 @@ ipcMain.handle('set-external-launcher-path', async (_event, id, filePath) => {
   }
   saveExternalPaths(paths);
   return detectExternalLaunchers();
+});
+
+ipcMain.handle('launch-external-launcher', async (_event, id) => {
+  const launchers = await detectExternalLaunchers();
+  const launcher = launchers.find((l) => l.id === id);
+  if (!launcher || !launcher.launchablePath) {
+    return { ok: false, reason: 'no-path' };
+  }
+  const error = await shell.openPath(launcher.launchablePath);
+  if (error) {
+    return { ok: false, reason: 'open-failed', message: error };
+  }
+  return { ok: true };
 });
 
 ipcMain.handle('pick-executable-path', async () => {

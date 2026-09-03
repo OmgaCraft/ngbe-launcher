@@ -31,6 +31,7 @@ contextBridge.exposeInMainWorld('ngbe', {
   checkForUpdates: () => ipcRenderer.invoke('check-update'),
   detectExternalLaunchers: () => ipcRenderer.invoke('detect-external-launchers'),
   setExternalLauncherPath: (id, filePath) => ipcRenderer.invoke('set-external-launcher-path', id, filePath),
+  launchExternalLauncher: (id) => ipcRenderer.invoke('launch-external-launcher', id),
   pickExecutablePath: () => ipcRenderer.invoke('pick-executable-path'),
   skinFaceUrl,
   skinFace3dUrl,
