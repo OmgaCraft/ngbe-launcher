@@ -3,6 +3,13 @@ const express = require('express');
 const app = express();
 app.set('trust proxy', true);
 
+// Read-only public-data proxy — safe to open up to any origin (desktop app,
+// mobile WebView, browser testing).
+app.use((_req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
+
 const NG_API_BASE = 'https://publicapi.nationsglory.fr';
 const TOKEN = process.env.NG_API_TOKEN;
 const PORT = process.env.PORT || 3000;
