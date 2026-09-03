@@ -130,22 +130,28 @@ safe('external-launchers', () => {
       row.innerHTML = `
         <span class="launcher-label">${launcher.name}</span>
         <input type="text" placeholder="Chemin non défini" value="${launcher.manualPath || ''}" data-id="${launcher.id}" />
-        <button class="btn-small secondary" data-id="${launcher.id}" data-action="browse">Parcourir</button>
+        <button class="confirm-btn row-save-btn" title="Enregistrer">✓</button>
+        <button class="confirm-btn secondary row-browse-btn" title="Parcourir">📁</button>
       `;
       const input = row.querySelector('input');
-      const browseBtn = row.querySelector('button');
+      const saveBtn = row.querySelector('.row-save-btn');
+      const browseBtn = row.querySelector('.row-browse-btn');
 
-      input.addEventListener('change', async () => {
-        await window.ngbe.setExternalLauncherPath(launcher.id, input.value.trim());
+      async function savePath(value) {
+        await window.ngbe.setExternalLauncherPath(launcher.id, value.trim());
         refreshExternalLauncherIcons();
+      }
+
+      saveBtn.addEventListener('click', () => savePath(input.value));
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') savePath(input.value);
       });
 
       browseBtn.addEventListener('click', async () => {
         const picked = await window.ngbe.pickExecutablePath();
         if (!picked) return;
         input.value = picked;
-        await window.ngbe.setExternalLauncherPath(launcher.id, picked);
-        refreshExternalLauncherIcons();
+        await savePath(picked);
       });
 
       rowsBox.appendChild(row);

@@ -318,6 +318,15 @@ html, body {
   background: var(--accent-hover);
 }
 
+.confirm-btn.secondary {
+  background: var(--panel-alt);
+  color: var(--text);
+}
+
+.confirm-btn.secondary:hover {
+  background: var(--border);
+}
+
 .profile-header {
   display: flex;
   align-items: center;

@@ -104,7 +104,7 @@ async function relayGet(pathSegment) {
 
 const EXTERNAL_LAUNCHERS = [
   { id: 'onyx', name: 'Onyx Client', matches: ['onyx'] },
-  { id: 'oderso', name: 'OdersO', matches: ['oderso', 'oders0'] },
+  { id: 'oderso', name: 'OderSo', matches: ['oderso', 'oders0'] },
   { id: 'flarial', name: 'Flarial', matches: ['flarial'] },
 ];
 
