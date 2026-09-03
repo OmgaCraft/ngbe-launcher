@@ -8,6 +8,11 @@
 <body>
   <div class="layout">
 
+    <aside class="sidebar launchers-panel">
+      <div id="external-launcher-icons" class="external-launcher-icons"></div>
+      <button id="external-settings-btn" class="gear-btn gear-btn-static" title="Paramètres">⚙</button>
+    </aside>
+
     <main class="content">
       <header class="title-block">
         <h1>NGBE Launcher</h1>
@@ -75,6 +80,18 @@
       <div id="servers-list" class="servers-list"></div>
     </aside>
 
+  </div>
+
+  <div id="external-settings-modal" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <h3>Paramètres — Launchers externes</h3>
+      <p class="modal-hint">
+        Si un launcher n'est pas détecté automatiquement, indique le chemin de son exécutable.
+      </p>
+      <div id="external-settings-rows" class="external-settings-rows"></div>
+      <button id="settings-update-btn" class="btn-small update-launcher-btn">Update Launcher NGBE</button>
+      <button id="close-settings-btn" class="btn-small secondary">Fermer</button>
+    </div>
   </div>
 
   <script src="renderer.js"></script>

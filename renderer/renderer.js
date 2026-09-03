@@ -86,6 +86,82 @@ safe('update-btn', () => {
   runUpdateCheck(null);
 });
 
+const EXTERNAL_LAUNCHER_LOGOS = {
+  onyx: 'assets/onyx.jpg',
+  oderso: 'assets/oderso.jpg',
+  flarial: 'assets/flarial.svg',
+};
+
+async function refreshExternalLauncherIcons() {
+  const box = document.getElementById('external-launcher-icons');
+  try {
+    const launchers = await window.ngbe.detectExternalLaunchers();
+    box.innerHTML = '';
+    launchers.forEach((launcher) => {
+      const icon = document.createElement('div');
+      icon.className = 'external-launcher-icon' + (launcher.installed ? ' installed' : '');
+      icon.title = `${launcher.name}${launcher.installed ? ' (détecté)' : ' (non détecté)'}`;
+      if (EXTERNAL_LAUNCHER_LOGOS[launcher.id]) {
+        icon.innerHTML = `<img src="${EXTERNAL_LAUNCHER_LOGOS[launcher.id]}" alt="" />`;
+      } else {
+        icon.textContent = launcher.name.slice(0, 2).toUpperCase();
+      }
+      box.appendChild(icon);
+    });
+    return launchers;
+  } catch (err) {
+    console.error('[external-launchers]', err);
+    return [];
+  }
+}
+
+safe('external-launchers', () => {
+  refreshExternalLauncherIcons();
+
+  const modal = document.getElementById('external-settings-modal');
+  const rowsBox = document.getElementById('external-settings-rows');
+
+  async function openSettings() {
+    const launchers = await refreshExternalLauncherIcons();
+    rowsBox.innerHTML = '';
+    launchers.forEach((launcher) => {
+      const row = document.createElement('div');
+      row.className = 'external-settings-row';
+      row.innerHTML = `
+        <span class="launcher-label">${launcher.name}</span>
+        <input type="text" placeholder="Chemin non défini" value="${launcher.manualPath || ''}" data-id="${launcher.id}" />
+        <button class="btn-small secondary" data-id="${launcher.id}" data-action="browse">Parcourir</button>
+      `;
+      const input = row.querySelector('input');
+      const browseBtn = row.querySelector('button');
+
+      input.addEventListener('change', async () => {
+        await window.ngbe.setExternalLauncherPath(launcher.id, input.value.trim());
+        refreshExternalLauncherIcons();
+      });
+
+      browseBtn.addEventListener('click', async () => {
+        const picked = await window.ngbe.pickExecutablePath();
+        if (!picked) return;
+        input.value = picked;
+        await window.ngbe.setExternalLauncherPath(launcher.id, picked);
+        refreshExternalLauncherIcons();
+      });
+
+      rowsBox.appendChild(row);
+    });
+    modal.hidden = false;
+  }
+
+  document.getElementById('external-settings-btn').addEventListener('click', openSettings);
+  document.getElementById('close-settings-btn').addEventListener('click', () => {
+    modal.hidden = true;
+  });
+  document.getElementById('settings-update-btn').addEventListener('click', () => {
+    runUpdateCheck(document.getElementById('update-btn'));
+  });
+});
+
 safe('solo-btn', () => {
   document.getElementById('solo-btn').addEventListener('click', () => {
     window.ngbe.launchUri('minecraft://');

@@ -29,6 +29,9 @@ contextBridge.exposeInMainWorld('ngbe', {
   getPlayerCount: () => ipcRenderer.invoke('ng-get-playercount'),
   getArticles: () => ipcRenderer.invoke('get-articles'),
   checkForUpdates: () => ipcRenderer.invoke('check-update'),
+  detectExternalLaunchers: () => ipcRenderer.invoke('detect-external-launchers'),
+  setExternalLauncherPath: (id, filePath) => ipcRenderer.invoke('set-external-launcher-path', id, filePath),
+  pickExecutablePath: () => ipcRenderer.invoke('pick-executable-path'),
   skinFaceUrl,
   skinFace3dUrl,
 });

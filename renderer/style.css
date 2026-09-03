@@ -31,7 +31,7 @@ html, body {
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: 96px 1fr 320px;
   height: 100vh;
 }
 
@@ -44,6 +44,14 @@ html, body {
 
 .sidebar.servers-panel {
   border-left: 1px solid var(--border);
+}
+
+.sidebar.launchers-panel {
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 12px;
 }
 
 .sidebar h2 {
@@ -490,4 +498,130 @@ html, body {
   border-radius: 10px;
   padding: 3px 9px;
   flex-shrink: 0;
+}
+
+.external-launcher-icons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.external-launcher-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--panel-alt);
+  border: 2px solid var(--border);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  overflow: hidden;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.external-launcher-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  filter: grayscale(1);
+  opacity: 0.55;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.external-launcher-icon.installed {
+  border-color: #2f8fe0;
+  color: var(--text);
+  box-shadow: 0 0 0 2px rgba(47, 143, 224, 0.25);
+}
+
+.external-launcher-icon.installed img {
+  filter: none;
+  opacity: 1;
+}
+
+.gear-btn-static {
+  position: static;
+  margin-top: auto;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 420px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-box h3 {
+  font-size: 15px;
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.external-settings-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.external-settings-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.external-settings-row .launcher-label {
+  width: 84px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.external-settings-row input {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 7px 9px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.btn-small.secondary {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-small.secondary:hover {
+  background: var(--border);
+}
+
+.update-launcher-btn {
+  margin-top: 6px;
 }

@@ -1,6 +1,10 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
+
+const execFileAsync = promisify(execFile);
 
 const ARTICLES_URL = 'https://nationsglory.fr/articles';
 const ARTICLES_CACHE_MS = 5 * 60 * 1000;
@@ -98,6 +102,69 @@ async function relayGet(pathSegment) {
   return res.json();
 }
 
+const EXTERNAL_LAUNCHERS = [
+  { id: 'onyx', name: 'Onyx Client', matches: ['onyx'] },
+  { id: 'oderso', name: 'OdersO', matches: ['oderso', 'oders0'] },
+  { id: 'flarial', name: 'Flarial', matches: ['flarial'] },
+];
+
+const UNINSTALL_KEYS = [
+  'HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+  'HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+  'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall',
+];
+
+async function queryRegistryDisplayNames() {
+  const names = [];
+  for (const key of UNINSTALL_KEYS) {
+    try {
+      const { stdout } = await execFileAsync('reg', ['query', key, '/s']);
+      const matches = stdout.match(/DisplayName\s+REG_SZ\s+.+/g) || [];
+      matches.forEach((line) => {
+        names.push(line.replace(/DisplayName\s+REG_SZ\s+/, '').trim().toLowerCase());
+      });
+    } catch (err) {
+      // key missing or inaccessible — ignore and continue
+    }
+  }
+  return names;
+}
+
+function externalLaunchersConfigPath() {
+  return path.join(app.getPath('userData'), 'external-launchers.json');
+}
+
+function loadExternalPaths() {
+  try {
+    return JSON.parse(fs.readFileSync(externalLaunchersConfigPath(), 'utf-8'));
+  } catch (err) {
+    return {};
+  }
+}
+
+function saveExternalPaths(paths) {
+  fs.writeFileSync(externalLaunchersConfigPath(), JSON.stringify(paths, null, 2));
+}
+
+async function detectExternalLaunchers() {
+  const manualPaths = loadExternalPaths();
+  const registryNames = await queryRegistryDisplayNames();
+
+  return EXTERNAL_LAUNCHERS.map((launcher) => {
+    const manualPath = manualPaths[launcher.id] || '';
+    const manualExists = manualPath ? fs.existsSync(manualPath) : false;
+    const foundInRegistry = registryNames.some((name) =>
+      launcher.matches.some((m) => name.includes(m))
+    );
+    return {
+      id: launcher.id,
+      name: launcher.name,
+      installed: manualExists || foundInRegistry,
+      manualPath,
+    };
+  });
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1040,
@@ -150,6 +217,31 @@ ipcMain.handle('get-articles', async () => {
 
 ipcMain.handle('check-update', async () => {
   return checkForUpdates();
+});
+
+ipcMain.handle('detect-external-launchers', async () => {
+  return detectExternalLaunchers();
+});
+
+ipcMain.handle('set-external-launcher-path', async (_event, id, filePath) => {
+  const paths = loadExternalPaths();
+  if (filePath) {
+    paths[id] = filePath;
+  } else {
+    delete paths[id];
+  }
+  saveExternalPaths(paths);
+  return detectExternalLaunchers();
+});
+
+ipcMain.handle('pick-executable-path', async () => {
+  const result = await dialog.showOpenDialog({
+    title: 'Sélectionner l\'exécutable',
+    filters: [{ name: 'Exécutable', extensions: ['exe'] }],
+    properties: ['openFile'],
+  });
+  if (result.canceled || !result.filePaths.length) return null;
+  return result.filePaths[0];
 });
 
 app.whenReady().then(createWindow);
