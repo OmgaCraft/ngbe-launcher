@@ -6,8 +6,8 @@
   },
   "ngIsland": { "name": "NG Island", "address": "bedrock.nationsglory.fr", "port": 19112 },
   "links": {
-    "wiki": { "name": "Wiki", "url": "https://wiki.nationsglory.fr/fr/" },
-    "codex": { "name": "Codex Bedrock", "url": "https://wiki.nationsglory.fr/fr/article/le-reglement-bedrock-codex-1ssj6k9/" }
+    "wiki": { "name": "Wiki", "url": "https://nationsglory.fr/wiki" },
+    "codex": { "name": "Codex Bedrock", "url": "https://nationsglory.fr/wiki/le-reglement-bedrock-codex" }
   },
   "servers": [
     { "name": "Iris", "address": "", "port": null, "color": "#c600d6", "apiKey": null },

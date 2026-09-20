@@ -463,14 +463,45 @@ const HIDDEN_ARCH_KEYS = new Set(['bonusChunks', 'bonusChunksPalier', 'noteMax']
 // invert the usual red-means-zero coloring.
 const ZERO_IS_GOOD_ARCH_KEYS = new Set(['trouMissiles', 'utilisationSchematica']);
 
-function formatDetailValue(value, zeroIsGood) {
-  if (value === 0) {
-    return zeroIsGood ? '<span class="good-value">0</span>' : '<span class="zero-value">0</span>';
+// Known max per build sub-score, so a nation at the cap shows green.
+const ARCH_MAX = {
+  terraforming: 2,
+  coherenceStyle: 2,
+  activiteRecente: 4,
+  blocsCatalogue: 2,
+  biomeCoherent: 1,
+  batimentsAbandonnes: 1,
+  terraformingRealiste: 1,
+  habitabiliteMaison: 2,
+  coherenceLumieres: 1,
+  roleplayPays: 1,
+  organics: 1,
+  beaute: 4,
+};
+
+// Main scores: fixed 0-based caps, and "a" which ranges -5 to 5.
+const SCORE_MAX = { g: 10, s: 10, e: 10, m: 10, am: 2, rm: 3, f: 3, u: 5 };
+const SCORE_RANGE = { a: [-5, 5] };
+
+function formatValueSpan(value, { max, range, zeroIsGood } = {}) {
+  let display = String(value ?? '—');
+  let cssClass = '';
+
+  if (range) {
+    display = `${value} (${range[0]} à ${range[1]})`;
+    if (value === range[1]) cssClass = 'good-value';
+  } else if (max != null) {
+    display = `${value} / ${max}`;
+    if (value === max) cssClass = 'good-value';
   }
-  if (zeroIsGood && typeof value === 'number') {
-    return `<span class="zero-value">${value}</span>`;
+
+  if (!cssClass && value === 0) {
+    cssClass = zeroIsGood ? 'good-value' : 'zero-value';
+  } else if (!cssClass && zeroIsGood && typeof value === 'number') {
+    cssClass = 'zero-value';
   }
-  return value ?? '—';
+
+  return cssClass ? `<span class="${cssClass}">${display}</span>` : display;
 }
 
 function buildDetailHtml(nation) {
@@ -480,18 +511,21 @@ function buildDetailHtml(nation) {
   const scoreEntries = Object.entries(nation.scores || {})
     .map(([key, value]) => {
       const label = NOTATION_SCORE_LABELS[key] || key.toUpperCase();
-      if (key === 'arch' && noteMax != null) {
-        const isMax = value === noteMax;
-        const display = `${value} / ${noteMax}`;
-        return `<div><span class="key">${label}</span>: ${isMax ? `<span class="good-value">${display}</span>` : display}</div>`;
-      }
-      return `<div><span class="key">${label}</span>: ${formatDetailValue(value)}</div>`;
+      const max = key === 'arch' ? noteMax : SCORE_MAX[key];
+      const valueHtml = formatValueSpan(value, { max, range: SCORE_RANGE[key] });
+      return `<div><span class="key">${label}</span>: ${valueHtml}</div>`;
     })
     .join('');
 
   const archEntries = Object.entries(archBreakdown)
     .filter(([key]) => !HIDDEN_ARCH_KEYS.has(key))
-    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${formatDetailValue(value, ZERO_IS_GOOD_ARCH_KEYS.has(key))}</div>`)
+    .map(([key, value]) => {
+      const valueHtml = formatValueSpan(value, {
+        max: ARCH_MAX[key],
+        zeroIsGood: ZERO_IS_GOOD_ARCH_KEYS.has(key),
+      });
+      return `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${valueHtml}</div>`;
+    })
     .join('');
 
   return `
