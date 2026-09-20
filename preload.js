@@ -28,7 +28,7 @@ contextBridge.exposeInMainWorld('ngbe', {
   getPlayerInfo: (pseudo) => ipcRenderer.invoke('ng-get-player', pseudo),
   getPlayerCount: () => ipcRenderer.invoke('ng-get-playercount'),
   getArticles: () => ipcRenderer.invoke('get-articles'),
-  getNotations: (server) => ipcRenderer.invoke('get-notations', server),
+  getNotations: (server, week) => ipcRenderer.invoke('get-notations', server, week),
   checkForUpdates: () => ipcRenderer.invoke('check-update'),
   detectExternalLaunchers: () => ipcRenderer.invoke('detect-external-launchers'),
   setExternalLauncherPath: (id, filePath) => ipcRenderer.invoke('set-external-launcher-path', id, filePath),

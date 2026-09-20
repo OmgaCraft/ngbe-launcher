@@ -202,8 +202,9 @@ ipcMain.handle('get-articles', async () => {
   return relayGet('/articles');
 });
 
-ipcMain.handle('get-notations', async (_event, server) => {
-  return relayGet(`/notations/${encodeURIComponent(server)}`);
+ipcMain.handle('get-notations', async (_event, server, week) => {
+  const query = week ? `?week=${encodeURIComponent(week)}` : '';
+  return relayGet(`/notations/${encodeURIComponent(server)}${query}`);
 });
 
 ipcMain.handle('check-update', async () => {

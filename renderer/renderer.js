@@ -615,20 +615,22 @@ function renderFollowedCountries() {
   });
 }
 
-async function fetchGlobalNotations() {
+async function fetchGlobalNotations(week) {
   const servers = (config.servers || []).filter((s) => s.apiKey);
-  const results = await Promise.allSettled(servers.map((s) => window.ngbe.getNotations(s.apiKey)));
+  const results = await Promise.allSettled(servers.map((s) => window.ngbe.getNotations(s.apiKey, week)));
   const merged = [];
+  let weekMeta = null;
   results.forEach((result) => {
     if (result.status === 'fulfilled') {
       merged.push(...(result.value.nations || []));
+      if (!weekMeta) weekMeta = result.value;
     }
   });
   merged.sort((a, b) => b.total - a.total);
   merged.forEach((nation, i) => {
     nation.globalRank = i + 1;
   });
-  return merged;
+  return { nations: merged, weekMeta };
 }
 
 function findPlayerNation(nations, isGlobal, serverApiKey) {
@@ -646,7 +648,15 @@ function findPlayerNation(nations, isGlobal, serverApiKey) {
   return null;
 }
 
-async function loadNotations(value) {
+function updateWeekNavButtons() {
+  const prevBtn = document.getElementById('notations-prev-week-btn');
+  const nextBtn = document.getElementById('notations-next-week-btn');
+  const data = currentNotationsData;
+  prevBtn.disabled = !data || data.prevWeek == null;
+  nextBtn.disabled = !data || data.nextWeek == null;
+}
+
+async function loadNotations(value, week) {
   const weekLabel = document.getElementById('notations-week');
   const top3Box = document.getElementById('notations-top3');
   const yourPositionBox = document.getElementById('notations-your-position');
@@ -659,6 +669,7 @@ async function loadNotations(value) {
   document.getElementById('notations-followed-list').innerHTML = '';
   hideNotationDetail();
   followRow.hidden = isGlobal;
+  updateWeekNavButtons();
 
   weekLabel.textContent = 'Chargement...';
   top3Box.innerHTML = '';
@@ -666,21 +677,31 @@ async function loadNotations(value) {
   try {
     let nations;
     let serverMeta;
+    let weekLabelText;
+    let prevWeek = null;
+    let nextWeek = null;
 
     if (isGlobal) {
-      nations = await fetchGlobalNotations();
+      const result = await fetchGlobalNotations(week);
+      nations = result.nations;
       serverMeta = { apiKey: GLOBAL_SERVER_VALUE, name: 'Global NGBE' };
-      weekLabel.textContent = 'Classement combiné de tous les serveurs NGBE';
+      weekLabelText = result.weekMeta ? `Classement combiné — ${result.weekMeta.week}` : 'Classement combiné';
+      prevWeek = result.weekMeta ? result.weekMeta.prevWeek : null;
+      nextWeek = result.weekMeta ? result.weekMeta.nextWeek : null;
     } else {
       const server = (config.servers || []).find((s) => s.apiKey === value);
       if (!server) throw new Error('Serveur inconnu');
-      const data = await window.ngbe.getNotations(server.apiKey);
+      const data = await window.ngbe.getNotations(server.apiKey, week);
       nations = data.nations || [];
       serverMeta = server;
-      weekLabel.textContent = data.week || '';
+      weekLabelText = data.week || '';
+      prevWeek = data.prevWeek;
+      nextWeek = data.nextWeek;
     }
 
-    currentNotationsData = { server: serverMeta, nations };
+    weekLabel.textContent = weekLabelText;
+    currentNotationsData = { server: serverMeta, nations, week, prevWeek, nextWeek, selectValue: value };
+    updateWeekNavButtons();
 
     const topCount = isGlobal ? 10 : 3;
     top3Box.innerHTML = '';
@@ -746,6 +767,17 @@ safe('notations', () => {
   if (preferred) select.value = preferred.apiKey;
 
   select.addEventListener('change', () => loadNotations(select.value));
+
+  document.getElementById('notations-prev-week-btn').addEventListener('click', () => {
+    if (currentNotationsData && currentNotationsData.prevWeek != null) {
+      loadNotations(currentNotationsData.selectValue, currentNotationsData.prevWeek);
+    }
+  });
+  document.getElementById('notations-next-week-btn').addEventListener('click', () => {
+    if (currentNotationsData && currentNotationsData.nextWeek != null) {
+      loadNotations(currentNotationsData.selectValue, currentNotationsData.nextWeek);
+    }
+  });
 
   updateNotationsButtonLabel();
   document.getElementById('notations-btn').addEventListener('click', openNotationsModal);

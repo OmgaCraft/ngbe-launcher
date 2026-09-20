@@ -755,6 +755,40 @@ html, body {
   font-family: inherit;
 }
 
+.notations-week-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notations-week-row .modal-hint {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+}
+
+.week-nav-btn {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.week-nav-btn:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.week-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .notations-list {
   display: flex;
   flex-direction: column;

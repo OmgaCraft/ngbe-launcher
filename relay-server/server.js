@@ -106,13 +106,22 @@ async function scrapeArticles() {
 const NOTATIONS_CACHE_MS = 5 * 60 * 1000;
 const notationsCache = new Map();
 
-async function fetchNotations(server) {
+function extractWeekNum(url) {
+  if (!url) return null;
+  const match = url.match(/[?&]week=(\d+)/);
+  return match ? Number(match[1]) : null;
+}
+
+async function fetchNotations(server, week) {
+  const cacheKey = `${server}:${week || 'current'}`;
   const now = Date.now();
-  const hit = notationsCache.get(server);
+  const hit = notationsCache.get(cacheKey);
   if (hit && now - hit.ts < NOTATIONS_CACHE_MS) {
     return hit.data;
   }
-  const res = await fetch(`https://nationsglory.fr/notations?server=${encodeURIComponent(server)}`);
+  const params = new URLSearchParams({ server });
+  if (week) params.set('week', week);
+  const res = await fetch(`https://nationsglory.fr/notations?${params.toString()}`);
   if (!res.ok) {
     throw new Error(`nationsglory.fr a répondu ${res.status}`);
   }
@@ -121,9 +130,12 @@ async function fetchNotations(server) {
   const result = {
     server: page.props.currentServer,
     week: page.props.currentWeek,
+    weekNum: page.props.weekNum,
+    prevWeek: extractWeekNum(page.props.prevWeekUrl),
+    nextWeek: extractWeekNum(page.props.nextWeekUrl),
     nations: (page.props.nations && page.props.nations.data) || [],
   };
-  notationsCache.set(server, { data: result, ts: now });
+  notationsCache.set(cacheKey, { data: result, ts: now });
   return result;
 }
 
@@ -175,7 +187,8 @@ app.get('/playercount', rateLimit, async (_req, res) => {
 
 app.get('/notations/:server', rateLimit, async (req, res) => {
   try {
-    const data = await fetchNotations(req.params.server);
+    const week = req.query.week ? Number(req.query.week) : undefined;
+    const data = await fetchNotations(req.params.server, week);
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: err.message });
