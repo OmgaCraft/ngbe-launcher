@@ -783,6 +783,27 @@ html, body {
   text-align: center;
 }
 
+.notation-rank.rank-gold {
+  color: #f2c94c;
+}
+
+.notation-rank.rank-silver {
+  color: #cfd4da;
+}
+
+.notation-rank.rank-bronze {
+  color: #cd7f32;
+}
+
+.notation-rank.rank-other {
+  color: #4a90e2;
+}
+
+.zero-value {
+  color: #e0574f;
+  font-weight: 700;
+}
+
 .notation-flag {
   width: 24px;
   height: 24px;

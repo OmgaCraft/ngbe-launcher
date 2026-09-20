@@ -458,12 +458,17 @@ const ARCH_LABELS = {
   noteMax: 'Note max',
 };
 
+function formatDetailValue(value) {
+  if (value === 0) return '<span class="zero-value">0</span>';
+  return value ?? '—';
+}
+
 function buildDetailHtml(nation) {
   const scoreEntries = Object.entries(nation.scores || {})
-    .map(([key, value]) => `<div><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${value}</div>`)
+    .map(([key, value]) => `<div><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${formatDetailValue(value)}</div>`)
     .join('');
   const archEntries = Object.entries(nation.archBreakdown || {})
-    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${value ?? '—'}</div>`)
+    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${formatDetailValue(value)}</div>`)
     .join('');
   return `
     <div class="detail-header">
@@ -490,6 +495,13 @@ function hideNotationDetail() {
   document.getElementById('notations-detail-panel').classList.remove('active');
 }
 
+function rankColorClass(rank) {
+  if (rank === 1) return 'rank-gold';
+  if (rank === 2) return 'rank-silver';
+  if (rank === 3) return 'rank-bronze';
+  return 'rank-other';
+}
+
 function buildNotationEntry(nation, options = {}) {
   const row = document.createElement('div');
   row.className = 'notation-row';
@@ -497,9 +509,10 @@ function buildNotationEntry(nation, options = {}) {
   const colorDot = options.color
     ? `<span class="server-dot" style="background:${options.color}" title="${options.serverName || ''}"></span>`
     : '';
+  const rank = options.rankOverride ?? nation.rank;
 
   row.innerHTML = `
-    <span class="notation-rank">#${options.rankOverride ?? nation.rank}</span>
+    <span class="notation-rank ${rankColorClass(rank)}">#${rank}</span>
     ${colorDot}
     <img class="notation-flag" src="${nation.flag || ''}" alt="" onerror="this.classList.add('flag-missing')" />
     <span class="notation-name">${nation.name}</span>
