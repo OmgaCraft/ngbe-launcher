@@ -19,6 +19,8 @@ function rememberServer(name) {
 
   const summary = document.getElementById('info-summary');
   if (summary && !summary.hidden) refreshProfile();
+
+  updateNotationsButtonLabel();
 }
 
 function launchServer(address, port) {
@@ -340,6 +342,8 @@ function renderServerStats(playerServers) {
   box.appendChild(row);
 }
 
+let cachedPlayerData = null;
+
 async function refreshProfile() {
   const pseudo = document.getElementById('pseudo-input').value.trim();
   if (!pseudo) return;
@@ -358,6 +362,7 @@ async function refreshProfile() {
 
   try {
     const data = await window.ngbe.getPlayerInfo(pseudo);
+    cachedPlayerData = data;
     usernameEl.textContent = data.username || pseudo;
     crownEl.hidden = !data.is_prime;
     descEl.textContent = data.description || 'Aucune description.';
@@ -402,4 +407,124 @@ safe('info-card', () => {
 
 safe('last-server', () => {
   document.getElementById('last-server').textContent = localStorage.getItem('ngbe.lastServer') || 'aucun';
+});
+
+const NOTATION_SCORE_LABELS = {
+  a: 'Activité',
+  g: 'Gestion',
+  s: 'Skills',
+  e: 'Économie',
+  m: 'Militaire',
+  am: 'AntiMatter',
+  rm: 'RedMatter',
+  eb: 'EndBringer',
+  f: 'Fusée',
+  u: 'Unesco',
+  arch: 'Archi',
+};
+
+function currentNotationsServer() {
+  const lastServerName = localStorage.getItem('ngbe.lastServer');
+  return (config.servers || []).find((s) => s.name === lastServerName && s.apiKey) || null;
+}
+
+function updateNotationsButtonLabel() {
+  const label = document.getElementById('notations-server-label');
+  if (!label) return;
+  const server = currentNotationsServer();
+  label.textContent = server ? server.name : 'aucun serveur';
+}
+
+function buildNotationEntry(nation, rankOverride) {
+  const wrapper = document.createElement('div');
+
+  const row = document.createElement('div');
+  row.className = 'notation-row';
+  row.innerHTML = `
+    <span class="notation-rank">#${rankOverride ?? nation.rank}</span>
+    <img class="notation-flag" src="${nation.flag || ''}" alt="" />
+    <span class="notation-name">${nation.name}</span>
+    <span class="notation-total">${nation.total}</span>
+  `;
+
+  const details = document.createElement('div');
+  details.className = 'notation-details';
+  details.hidden = true;
+  const scoreEntries = Object.entries(nation.scores || {})
+    .map(([key, value]) => `<span><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${value}</span>`)
+    .join('');
+  details.innerHTML = `${scoreEntries}<span><span class="key">Bourse</span>: ${nation.balance ?? '—'} $</span>`;
+
+  row.addEventListener('click', () => {
+    details.hidden = !details.hidden;
+  });
+
+  wrapper.appendChild(row);
+  wrapper.appendChild(details);
+  return wrapper;
+}
+
+async function openNotationsModal() {
+  const server = currentNotationsServer();
+  const modal = document.getElementById('notations-modal');
+  const serverLabel = document.getElementById('notations-modal-server');
+  const weekLabel = document.getElementById('notations-week');
+  const top3Box = document.getElementById('notations-top3');
+  const yourPositionBox = document.getElementById('notations-your-position');
+
+  yourPositionBox.hidden = true;
+  yourPositionBox.innerHTML = '';
+  modal.hidden = false;
+
+  if (!server) {
+    serverLabel.textContent = 'aucun serveur';
+    weekLabel.textContent = '';
+    top3Box.innerHTML = '<p class="profile-error">Rejoins un serveur pour voir ses notations.</p>';
+    return;
+  }
+
+  serverLabel.textContent = server.name;
+  weekLabel.textContent = 'Chargement...';
+  top3Box.innerHTML = '';
+
+  try {
+    const data = await window.ngbe.getNotations(server.apiKey);
+    weekLabel.textContent = data.week || '';
+    const nations = data.nations || [];
+
+    top3Box.innerHTML = '';
+    nations.slice(0, 3).forEach((nation) => {
+      top3Box.appendChild(buildNotationEntry(nation));
+    });
+
+    const playerCountry =
+      cachedPlayerData &&
+      cachedPlayerData.servers &&
+      cachedPlayerData.servers[server.apiKey] &&
+      cachedPlayerData.servers[server.apiKey].country;
+
+    if (playerCountry) {
+      const mine = nations.find((n) => n.name.toLowerCase() === playerCountry.toLowerCase());
+      if (mine && mine.rank > 3) {
+        const label = document.createElement('p');
+        label.className = 'modal-hint';
+        label.style.marginBottom = '6px';
+        label.textContent = 'Ta nation :';
+        yourPositionBox.appendChild(label);
+        yourPositionBox.appendChild(buildNotationEntry(mine));
+        yourPositionBox.hidden = false;
+      }
+    }
+  } catch (err) {
+    weekLabel.textContent = '';
+    top3Box.innerHTML = `<p class="profile-error">Erreur : ${err.message}</p>`;
+  }
+}
+
+safe('notations', () => {
+  updateNotationsButtonLabel();
+  document.getElementById('notations-btn').addEventListener('click', openNotationsModal);
+  document.getElementById('close-notations-btn').addEventListener('click', () => {
+    document.getElementById('notations-modal').hidden = true;
+  });
 });

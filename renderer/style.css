@@ -635,3 +635,101 @@ html, body {
 .update-launcher-btn {
   margin-top: 6px;
 }
+
+.notations-button {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.notations-button:hover {
+  background: var(--panel-alt);
+  border-color: #384038;
+}
+
+.notations-modal-box {
+  width: 440px;
+}
+
+.notations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notation-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--panel-alt);
+  cursor: pointer;
+}
+
+.notation-row:hover {
+  background: var(--panel-alt-hover);
+}
+
+.notation-rank {
+  width: 22px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--muted);
+  text-align: center;
+}
+
+.notation-flag {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--border);
+}
+
+.notation-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notation-total {
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.notation-details {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 8px 8px 4px;
+  background: var(--panel-alt);
+  border-radius: 0 0 8px 8px;
+  margin-top: -6px;
+}
+
+.notation-details span.key {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.notations-your-position {
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px;
+  background: var(--panel-alt);
+}

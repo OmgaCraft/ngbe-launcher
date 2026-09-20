@@ -71,6 +71,16 @@ function decodeEntities(str) {
     .replace(/&apos;/g, "'");
 }
 
+// nationsglory.fr runs on Laravel + Inertia — every page embeds its full
+// props as JSON in <div id="app" data-page="...">, HTML-entity-encoded.
+function extractInertiaPage(html) {
+  const match = html.match(/data-page="([^"]+)"/);
+  if (!match) {
+    throw new Error('page Inertia introuvable (le site a peut-être encore changé)');
+  }
+  return JSON.parse(decodeEntities(match[1]));
+}
+
 async function scrapeArticles() {
   const now = Date.now();
   if (articlesCache.data && now - articlesCache.ts < ARTICLES_CACHE_MS) {
@@ -81,19 +91,40 @@ async function scrapeArticles() {
     throw new Error(`nationsglory.fr a répondu ${res.status}`);
   }
   const html = await res.text();
-  const re = /<a class="tile[^"]*" href="(\/article\/[^"]+)">\s*<img class="tile-background" src="([^"]+)"[^>]*>[\s\S]*?<span class="tile-eyebrow">([^<]+)<\/span>[\s\S]*?<h3 class="tile-title">([^<]+)<\/h3>/g;
-  const articles = [];
-  let match;
-  while ((match = re.exec(html)) !== null) {
-    articles.push({
-      url: `https://nationsglory.fr${match[1]}`,
-      image: match[2],
-      date: decodeEntities(match[3].trim()),
-      title: decodeEntities(match[4].trim()),
-    });
-  }
+  const page = extractInertiaPage(html);
+  const posts = (page.props.posts && page.props.posts.data) || [];
+  const articles = posts.map((post) => ({
+    url: `https://nationsglory.fr/articles/${post.slug}`,
+    image: post.image,
+    date: post.date,
+    title: post.title,
+  }));
   articlesCache = { data: articles, ts: now };
   return articles;
+}
+
+const NOTATIONS_CACHE_MS = 5 * 60 * 1000;
+const notationsCache = new Map();
+
+async function fetchNotations(server) {
+  const now = Date.now();
+  const hit = notationsCache.get(server);
+  if (hit && now - hit.ts < NOTATIONS_CACHE_MS) {
+    return hit.data;
+  }
+  const res = await fetch(`https://nationsglory.fr/notations?server=${encodeURIComponent(server)}`);
+  if (!res.ok) {
+    throw new Error(`nationsglory.fr a répondu ${res.status}`);
+  }
+  const html = await res.text();
+  const page = extractInertiaPage(html);
+  const result = {
+    server: page.props.currentServer,
+    week: page.props.currentWeek,
+    nations: (page.props.nations && page.props.nations.data) || [],
+  };
+  notationsCache.set(server, { data: result, ts: now });
+  return result;
 }
 
 // The Android repo is private, so its GitHub releases API isn't reachable
@@ -136,6 +167,15 @@ app.get('/user/:pseudo', rateLimit, async (req, res) => {
 app.get('/playercount', rateLimit, async (_req, res) => {
   try {
     const data = await cachedFetch('playercount', `${NG_API_BASE}/playercount`);
+    res.json(data);
+  } catch (err) {
+    res.status(502).json({ error: err.message });
+  }
+});
+
+app.get('/notations/:server', rateLimit, async (req, res) => {
+  try {
+    const data = await fetchNotations(req.params.server);
     res.json(data);
   } catch (err) {
     res.status(502).json({ error: err.message });

@@ -73,6 +73,8 @@
           <button id="info-gear" class="gear-btn" title="Modifier le profil" hidden>⚙</button>
         </div>
       </section>
+
+      <button id="notations-btn" class="notations-button">🏆 Notations — <span id="notations-server-label">aucun serveur</span></button>
     </main>
 
     <aside class="sidebar servers-panel">
@@ -91,6 +93,16 @@
       <div id="external-settings-rows" class="external-settings-rows"></div>
       <button id="settings-update-btn" class="btn-small update-launcher-btn">Update Launcher NGBE</button>
       <button id="close-settings-btn" class="btn-small secondary">Fermer</button>
+    </div>
+  </div>
+
+  <div id="notations-modal" class="modal-overlay" hidden>
+    <div class="modal-box notations-modal-box">
+      <h3>Notations — <span id="notations-modal-server"></span></h3>
+      <p class="modal-hint" id="notations-week"></p>
+      <div id="notations-your-position" class="notations-your-position" hidden></div>
+      <div id="notations-top3" class="notations-list"></div>
+      <button id="close-notations-btn" class="btn-small secondary">Fermer</button>
     </div>
   </div>
 

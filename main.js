@@ -6,8 +6,6 @@ const { promisify } = require('util');
 
 const execFileAsync = promisify(execFile);
 
-const ARTICLES_URL = 'https://nationsglory.fr/articles';
-const ARTICLES_CACHE_MS = 5 * 60 * 1000;
 const GITHUB_REPO = 'OmgaCraft/ngbe-launcher';
 
 function parseVersion(tag) {
@@ -42,43 +40,6 @@ async function checkForUpdates() {
     releaseUrl: release.html_url,
     downloadUrl: asset ? asset.browser_download_url : release.html_url,
   };
-}
-
-let articlesCache = { data: null, ts: 0 };
-
-function decodeEntities(str) {
-  return str
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'");
-}
-
-async function scrapeArticles() {
-  const now = Date.now();
-  if (articlesCache.data && now - articlesCache.ts < ARTICLES_CACHE_MS) {
-    return articlesCache.data;
-  }
-  const res = await fetch(ARTICLES_URL);
-  if (!res.ok) {
-    throw new Error(`nationsglory.fr a répondu ${res.status}`);
-  }
-  const html = await res.text();
-  const re = /<a class="tile[^"]*" href="(\/article\/[^"]+)">\s*<img class="tile-background" src="([^"]+)"[^>]*>[\s\S]*?<span class="tile-eyebrow">([^<]+)<\/span>[\s\S]*?<h3 class="tile-title">([^<]+)<\/h3>/g;
-  const articles = [];
-  let match;
-  while ((match = re.exec(html)) !== null) {
-    articles.push({
-      url: `https://nationsglory.fr${match[1]}`,
-      image: match[2],
-      date: decodeEntities(match[3].trim()),
-      title: decodeEntities(match[4].trim()),
-    });
-  }
-  articlesCache = { data: articles, ts: now };
-  return articles;
 }
 
 function loadServerConfig() {
@@ -238,7 +199,11 @@ ipcMain.handle('ng-get-playercount', async () => {
 });
 
 ipcMain.handle('get-articles', async () => {
-  return scrapeArticles();
+  return relayGet('/articles');
+});
+
+ipcMain.handle('get-notations', async (_event, server) => {
+  return relayGet(`/notations/${encodeURIComponent(server)}`);
 });
 
 ipcMain.handle('check-update', async () => {
