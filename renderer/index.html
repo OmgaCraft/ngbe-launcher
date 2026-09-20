@@ -98,20 +98,26 @@
 
   <div id="notations-modal" class="modal-overlay" hidden>
     <div class="modal-box notations-modal-box">
-      <h3>Notations</h3>
-      <select id="notations-server-select" class="notations-server-select"></select>
-      <p class="modal-hint" id="notations-week"></p>
-      <div id="notations-your-position" class="notations-your-position" hidden></div>
-      <div id="notations-top3" class="notations-list"></div>
+      <div class="notations-main">
+        <h3>Notations</h3>
+        <select id="notations-server-select" class="notations-server-select"></select>
+        <p class="modal-hint" id="notations-week"></p>
+        <div id="notations-your-position" class="notations-your-position" hidden></div>
+        <div id="notations-top3" class="notations-list"></div>
 
-      <p class="modal-hint notations-followed-title">Pays suivis</p>
-      <div id="notations-followed-list" class="notations-list"></div>
-      <div class="pseudo-row">
-        <input type="text" id="notations-follow-input" placeholder="Nom du pays (ex: France)" />
-        <button id="notations-follow-btn" class="confirm-btn" title="Suivre">+</button>
+        <p class="modal-hint notations-followed-title">Pays suivis</p>
+        <div id="notations-followed-list" class="notations-list"></div>
+        <div class="pseudo-row" id="notations-follow-row">
+          <input type="text" id="notations-follow-input" placeholder="Nom du pays (ex: France)" />
+          <button id="notations-follow-btn" class="confirm-btn" title="Suivre">+</button>
+        </div>
+
+        <button id="close-notations-btn" class="btn-small secondary">Fermer</button>
       </div>
-
-      <button id="close-notations-btn" class="btn-small secondary">Fermer</button>
+      <div id="notations-detail-panel" class="notations-detail-panel">
+        <button id="close-notation-detail-btn" class="unfollow-btn notations-detail-close" title="Fermer le détail">✕</button>
+        <div id="notations-detail-content"></div>
+      </div>
     </div>
   </div>
 

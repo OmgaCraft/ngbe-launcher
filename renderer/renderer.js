@@ -435,13 +435,72 @@ function updateNotationsButtonLabel() {
   label.textContent = server ? server.name : 'aucun serveur';
 }
 
-function buildNotationEntry(nation, options = {}) {
-  const wrapper = document.createElement('div');
+const ARCH_LABELS = {
+  terraforming: 'Terraforming',
+  coherenceStyle: 'Cohérence du style',
+  activiteRecente: 'Activité récente',
+  blocsCatalogue: 'Blocs catalogue',
+  trouMissiles: 'Trous de missiles',
+  biomeCoherent: 'Biome cohérent',
+  batimentsAbandonnes: 'Bâtiments abandonnés',
+  terraformingRealiste: 'Terraforming réaliste',
+  utilisationSchematica: 'Schematica',
+  habitabiliteMaison: 'Habitabilité',
+  coherenceLumieres: 'Lumières',
+  roleplayPays: 'Roleplay',
+  organics: 'Organique',
+  beaute: 'Beauté',
+  bonusChunks: 'Bonus chunks',
+  bonusChunksPalier: 'Palier bonus chunks',
+  multiplicateurSurfaceConstruite: 'Multiplicateur surface',
+  noteAuteur: 'Auteur de la note',
+  source: 'Source',
+  noteMax: 'Note max',
+};
 
+function buildDetailHtml(nation) {
+  const scoreEntries = Object.entries(nation.scores || {})
+    .map(([key, value]) => `<div><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${value}</div>`)
+    .join('');
+  const archEntries = Object.entries(nation.archBreakdown || {})
+    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${value ?? '—'}</div>`)
+    .join('');
+  return `
+    <div class="detail-header">
+      <img class="notation-flag" src="${nation.flag || ''}" alt="" onerror="this.classList.add('flag-missing')" />
+      <div>
+        <div class="detail-name">${nation.name}</div>
+        <div class="detail-total">Total : ${nation.total}</div>
+      </div>
+    </div>
+    <div class="detail-section-title">Scores</div>
+    <div class="detail-grid">${scoreEntries}</div>
+    <div class="detail-section-title">Détail Architecture</div>
+    <div class="detail-grid">${archEntries}</div>
+    <div class="detail-balance">Bourse : ${nation.balance ?? '—'} $</div>
+  `;
+}
+
+function showNotationDetail(nation) {
+  document.getElementById('notations-detail-content').innerHTML = buildDetailHtml(nation);
+  document.getElementById('notations-detail-panel').classList.add('active');
+}
+
+function hideNotationDetail() {
+  document.getElementById('notations-detail-panel').classList.remove('active');
+}
+
+function buildNotationEntry(nation, options = {}) {
   const row = document.createElement('div');
   row.className = 'notation-row';
+
+  const colorDot = options.color
+    ? `<span class="server-dot" style="background:${options.color}" title="${options.serverName || ''}"></span>`
+    : '';
+
   row.innerHTML = `
     <span class="notation-rank">#${options.rankOverride ?? nation.rank}</span>
+    ${colorDot}
     <img class="notation-flag" src="${nation.flag || ''}" alt="" onerror="this.classList.add('flag-missing')" />
     <span class="notation-name">${nation.name}</span>
     <span class="notation-total">${nation.total}</span>
@@ -459,21 +518,9 @@ function buildNotationEntry(nation, options = {}) {
     row.appendChild(removeBtn);
   }
 
-  const details = document.createElement('div');
-  details.className = 'notation-details';
-  details.hidden = true;
-  const scoreEntries = Object.entries(nation.scores || {})
-    .map(([key, value]) => `<span><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${value}</span>`)
-    .join('');
-  details.innerHTML = `${scoreEntries}<span><span class="key">Bourse</span>: ${nation.balance ?? '—'} $</span>`;
+  row.addEventListener('click', () => showNotationDetail(nation));
 
-  row.addEventListener('click', () => {
-    details.hidden = !details.hidden;
-  });
-
-  wrapper.appendChild(row);
-  wrapper.appendChild(details);
-  return wrapper;
+  return row;
 }
 
 function getFollowedCountries() {
@@ -508,35 +555,46 @@ function removeFollowedCountry(server, country) {
 
 let currentNotationsData = null;
 
+const GLOBAL_SERVER_VALUE = '__global__';
+
 function renderFollowedCountries() {
   const followedBox = document.getElementById('notations-followed-list');
   followedBox.innerHTML = '';
   if (!currentNotationsData) return;
 
   const { server, nations } = currentNotationsData;
-  const followed = getFollowedCountries().filter((f) => f.server === server.apiKey);
+  const isGlobal = server.apiKey === GLOBAL_SERVER_VALUE;
+  const followed = getFollowedCountries().filter((f) => isGlobal || f.server === server.apiKey);
 
-  followed.forEach(({ country }) => {
-    const nation = nations.find((n) => n.name.toLowerCase() === country.toLowerCase());
+  followed.forEach(({ server: followedServer, country }) => {
+    const nation = nations.find(
+      (n) => n.name.toLowerCase() === country.toLowerCase() && n.server === followedServer
+    );
+    const serverInfo = (config.servers || []).find((s) => s.apiKey === followedServer);
+
     if (!nation) {
       const missing = document.createElement('div');
       missing.className = 'notation-row';
-      missing.innerHTML = `<span class="notation-name">${country} (introuvable cette semaine)</span>`;
+      missing.innerHTML = `<span class="notation-name">${country} (introuvable — ${serverInfo ? serverInfo.name : followedServer})</span>`;
       const removeBtn = document.createElement('button');
       removeBtn.className = 'unfollow-btn';
       removeBtn.textContent = '✕';
       removeBtn.addEventListener('click', () => {
-        removeFollowedCountry(server.apiKey, country);
+        removeFollowedCountry(followedServer, country);
         renderFollowedCountries();
       });
       missing.appendChild(removeBtn);
       followedBox.appendChild(missing);
       return;
     }
+
     followedBox.appendChild(
       buildNotationEntry(nation, {
+        rankOverride: isGlobal ? nation.globalRank : undefined,
+        color: isGlobal && serverInfo ? serverInfo.color : undefined,
+        serverName: serverInfo ? serverInfo.name : undefined,
         onRemove: () => {
-          removeFollowedCountry(server.apiKey, country);
+          removeFollowedCountry(followedServer, country);
           renderFollowedCountries();
         },
       })
@@ -544,47 +602,103 @@ function renderFollowedCountries() {
   });
 }
 
-async function loadNotationsForServer(server) {
+async function fetchGlobalNotations() {
+  const servers = (config.servers || []).filter((s) => s.apiKey);
+  const results = await Promise.allSettled(servers.map((s) => window.ngbe.getNotations(s.apiKey)));
+  const merged = [];
+  results.forEach((result) => {
+    if (result.status === 'fulfilled') {
+      merged.push(...(result.value.nations || []));
+    }
+  });
+  merged.sort((a, b) => b.total - a.total);
+  merged.forEach((nation, i) => {
+    nation.globalRank = i + 1;
+  });
+  return merged;
+}
+
+function findPlayerNation(nations, isGlobal, serverApiKey) {
+  if (!cachedPlayerData || !cachedPlayerData.servers) return null;
+  const candidateServers = isGlobal ? config.servers || [] : [{ apiKey: serverApiKey }];
+  for (const s of candidateServers) {
+    if (!s.apiKey) continue;
+    const country = cachedPlayerData.servers[s.apiKey] && cachedPlayerData.servers[s.apiKey].country;
+    if (!country) continue;
+    const match = nations.find(
+      (n) => n.server === s.apiKey && n.name.toLowerCase() === country.toLowerCase()
+    );
+    if (match) return match;
+  }
+  return null;
+}
+
+async function loadNotations(value) {
   const weekLabel = document.getElementById('notations-week');
   const top3Box = document.getElementById('notations-top3');
   const yourPositionBox = document.getElementById('notations-your-position');
+  const followRow = document.getElementById('notations-follow-row');
+  const isGlobal = value === GLOBAL_SERVER_VALUE;
 
   yourPositionBox.hidden = true;
   yourPositionBox.innerHTML = '';
   currentNotationsData = null;
   document.getElementById('notations-followed-list').innerHTML = '';
+  hideNotationDetail();
+  followRow.hidden = isGlobal;
 
   weekLabel.textContent = 'Chargement...';
   top3Box.innerHTML = '';
 
   try {
-    const data = await window.ngbe.getNotations(server.apiKey);
-    weekLabel.textContent = data.week || '';
-    const nations = data.nations || [];
-    currentNotationsData = { server, nations };
+    let nations;
+    let serverMeta;
 
+    if (isGlobal) {
+      nations = await fetchGlobalNotations();
+      serverMeta = { apiKey: GLOBAL_SERVER_VALUE, name: 'Global NGBE' };
+      weekLabel.textContent = 'Classement combiné de tous les serveurs NGBE';
+    } else {
+      const server = (config.servers || []).find((s) => s.apiKey === value);
+      if (!server) throw new Error('Serveur inconnu');
+      const data = await window.ngbe.getNotations(server.apiKey);
+      nations = data.nations || [];
+      serverMeta = server;
+      weekLabel.textContent = data.week || '';
+    }
+
+    currentNotationsData = { server: serverMeta, nations };
+
+    const topCount = isGlobal ? 10 : 3;
     top3Box.innerHTML = '';
-    nations.slice(0, 3).forEach((nation) => {
-      top3Box.appendChild(buildNotationEntry(nation));
+    nations.slice(0, topCount).forEach((nation) => {
+      const serverInfo = (config.servers || []).find((s) => s.apiKey === nation.server);
+      top3Box.appendChild(
+        buildNotationEntry(nation, {
+          rankOverride: isGlobal ? nation.globalRank : undefined,
+          color: isGlobal && serverInfo ? serverInfo.color : undefined,
+          serverName: serverInfo ? serverInfo.name : undefined,
+        })
+      );
     });
 
-    const playerCountry =
-      cachedPlayerData &&
-      cachedPlayerData.servers &&
-      cachedPlayerData.servers[server.apiKey] &&
-      cachedPlayerData.servers[server.apiKey].country;
-
-    if (playerCountry) {
-      const mine = nations.find((n) => n.name.toLowerCase() === playerCountry.toLowerCase());
-      if (mine && mine.rank > 3) {
-        const label = document.createElement('p');
-        label.className = 'modal-hint';
-        label.style.marginBottom = '6px';
-        label.textContent = 'Ta nation :';
-        yourPositionBox.appendChild(label);
-        yourPositionBox.appendChild(buildNotationEntry(mine));
-        yourPositionBox.hidden = false;
-      }
+    const mine = findPlayerNation(nations, isGlobal, serverMeta.apiKey);
+    const mineRank = isGlobal ? mine && mine.globalRank : mine && mine.rank;
+    if (mine && mineRank > topCount) {
+      const label = document.createElement('p');
+      label.className = 'modal-hint';
+      label.style.marginBottom = '6px';
+      label.textContent = 'Ta nation :';
+      const mineServerInfo = (config.servers || []).find((s) => s.apiKey === mine.server);
+      yourPositionBox.appendChild(label);
+      yourPositionBox.appendChild(
+        buildNotationEntry(mine, {
+          rankOverride: isGlobal ? mine.globalRank : undefined,
+          color: isGlobal && mineServerInfo ? mineServerInfo.color : undefined,
+          serverName: mineServerInfo ? mineServerInfo.name : undefined,
+        })
+      );
+      yourPositionBox.hidden = false;
     }
 
     renderFollowedCountries();
@@ -598,10 +712,7 @@ function openNotationsModal() {
   const select = document.getElementById('notations-server-select');
   const modal = document.getElementById('notations-modal');
   modal.hidden = false;
-
-  if (!select.value) return;
-  const server = (config.servers || []).find((s) => s.apiKey === select.value);
-  if (server) loadNotationsForServer(server);
+  if (select.value) loadNotations(select.value);
 }
 
 safe('notations', () => {
@@ -613,27 +724,31 @@ safe('notations', () => {
     opt.textContent = server.name;
     select.appendChild(opt);
   });
+  const globalOpt = document.createElement('option');
+  globalOpt.value = GLOBAL_SERVER_VALUE;
+  globalOpt.textContent = '🌐 Global NGBE';
+  select.appendChild(globalOpt);
 
   const preferred = currentNotationsServer();
   if (preferred) select.value = preferred.apiKey;
 
-  select.addEventListener('change', () => {
-    const server = (config.servers || []).find((s) => s.apiKey === select.value);
-    if (server) loadNotationsForServer(server);
-  });
+  select.addEventListener('change', () => loadNotations(select.value));
 
   updateNotationsButtonLabel();
   document.getElementById('notations-btn').addEventListener('click', openNotationsModal);
   document.getElementById('close-notations-btn').addEventListener('click', () => {
     document.getElementById('notations-modal').hidden = true;
   });
+  document.getElementById('close-notation-detail-btn').addEventListener('click', hideNotationDetail);
 
   const followInput = document.getElementById('notations-follow-input');
   const followBtn = document.getElementById('notations-follow-btn');
 
   function followFromInput() {
     const country = followInput.value.trim();
-    if (!country || !currentNotationsData) return;
+    if (!country || !currentNotationsData || currentNotationsData.server.apiKey === GLOBAL_SERVER_VALUE) {
+      return;
+    }
     addFollowedCountry(currentNotationsData.server.apiKey, country);
     followInput.value = '';
     renderFollowedCountries();
