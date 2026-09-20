@@ -705,6 +705,13 @@ async function loadNotations(value, week) {
 
     const topCount = isGlobal ? 10 : 3;
     top3Box.innerHTML = '';
+
+    if (nations.length === 0) {
+      top3Box.innerHTML = '<p class="modal-hint">Pas encore de données pour cette semaine.</p>';
+      renderFollowedCountries();
+      return;
+    }
+
     nations.slice(0, topCount).forEach((nation) => {
       const serverInfo = (config.servers || []).find((s) => s.apiKey === nation.server);
       top3Box.appendChild(

@@ -127,13 +127,17 @@ async function fetchNotations(server, week) {
   }
   const html = await res.text();
   const page = extractInertiaPage(html);
+  const nations = (page.props.nations && page.props.nations.data) || [];
   const result = {
     server: page.props.currentServer,
     week: page.props.currentWeek,
     weekNum: page.props.weekNum,
     prevWeek: extractWeekNum(page.props.prevWeekUrl),
-    nextWeek: extractWeekNum(page.props.nextWeekUrl),
-    nations: (page.props.nations && page.props.nations.data) || [],
+    // nationsglory.fr never links forward past "today" even though the
+    // endpoint happily serves the in-progress week's live (partial) data —
+    // offer +1 optimistically; the client stops once it hits an empty week.
+    nextWeek: nations.length > 0 && typeof page.props.weekNum === 'number' ? page.props.weekNum + 1 : null,
+    nations,
   };
   notationsCache.set(cacheKey, { data: result, ts: now });
   return result;
