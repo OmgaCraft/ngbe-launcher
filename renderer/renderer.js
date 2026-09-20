@@ -435,17 +435,29 @@ function updateNotationsButtonLabel() {
   label.textContent = server ? server.name : 'aucun serveur';
 }
 
-function buildNotationEntry(nation, rankOverride) {
+function buildNotationEntry(nation, options = {}) {
   const wrapper = document.createElement('div');
 
   const row = document.createElement('div');
   row.className = 'notation-row';
   row.innerHTML = `
-    <span class="notation-rank">#${rankOverride ?? nation.rank}</span>
-    <img class="notation-flag" src="${nation.flag || ''}" alt="" />
+    <span class="notation-rank">#${options.rankOverride ?? nation.rank}</span>
+    <img class="notation-flag" src="${nation.flag || ''}" alt="" onerror="this.classList.add('flag-missing')" />
     <span class="notation-name">${nation.name}</span>
     <span class="notation-total">${nation.total}</span>
   `;
+
+  if (options.onRemove) {
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'unfollow-btn';
+    removeBtn.title = 'Ne plus suivre';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      options.onRemove();
+    });
+    row.appendChild(removeBtn);
+  }
 
   const details = document.createElement('div');
   details.className = 'notation-details';
@@ -464,6 +476,74 @@ function buildNotationEntry(nation, rankOverride) {
   return wrapper;
 }
 
+function getFollowedCountries() {
+  try {
+    return JSON.parse(localStorage.getItem('ngbe.followedCountries') || '[]');
+  } catch (err) {
+    return [];
+  }
+}
+
+function saveFollowedCountries(list) {
+  localStorage.setItem('ngbe.followedCountries', JSON.stringify(list));
+}
+
+function addFollowedCountry(server, country) {
+  const list = getFollowedCountries();
+  const exists = list.some(
+    (f) => f.server === server && f.country.toLowerCase() === country.toLowerCase()
+  );
+  if (!exists) {
+    list.push({ server, country });
+    saveFollowedCountries(list);
+  }
+}
+
+function removeFollowedCountry(server, country) {
+  const list = getFollowedCountries().filter(
+    (f) => !(f.server === server && f.country.toLowerCase() === country.toLowerCase())
+  );
+  saveFollowedCountries(list);
+}
+
+let currentNotationsData = null;
+
+function renderFollowedCountries() {
+  const followedBox = document.getElementById('notations-followed-list');
+  followedBox.innerHTML = '';
+  if (!currentNotationsData) return;
+
+  const { server, nations } = currentNotationsData;
+  const followed = getFollowedCountries().filter((f) => f.server === server.apiKey);
+
+  followed.forEach(({ country }) => {
+    const nation = nations.find((n) => n.name.toLowerCase() === country.toLowerCase());
+    if (!nation) {
+      const missing = document.createElement('div');
+      missing.className = 'notation-row';
+      missing.innerHTML = `<span class="notation-name">${country} (introuvable cette semaine)</span>`;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'unfollow-btn';
+      removeBtn.textContent = '✕';
+      removeBtn.addEventListener('click', () => {
+        removeFollowedCountry(server.apiKey, country);
+        renderFollowedCountries();
+      });
+      missing.appendChild(removeBtn);
+      followedBox.appendChild(missing);
+      return;
+    }
+    followedBox.appendChild(
+      buildNotationEntry(nation, {
+        onRemove: () => {
+          removeFollowedCountry(server.apiKey, country);
+          renderFollowedCountries();
+        },
+      })
+    );
+  });
+}
+
 async function openNotationsModal() {
   const server = currentNotationsServer();
   const modal = document.getElementById('notations-modal');
@@ -474,6 +554,8 @@ async function openNotationsModal() {
 
   yourPositionBox.hidden = true;
   yourPositionBox.innerHTML = '';
+  currentNotationsData = null;
+  document.getElementById('notations-followed-list').innerHTML = '';
   modal.hidden = false;
 
   if (!server) {
@@ -491,6 +573,7 @@ async function openNotationsModal() {
     const data = await window.ngbe.getNotations(server.apiKey);
     weekLabel.textContent = data.week || '';
     const nations = data.nations || [];
+    currentNotationsData = { server, nations };
 
     top3Box.innerHTML = '';
     nations.slice(0, 3).forEach((nation) => {
@@ -515,6 +598,8 @@ async function openNotationsModal() {
         yourPositionBox.hidden = false;
       }
     }
+
+    renderFollowedCountries();
   } catch (err) {
     weekLabel.textContent = '';
     top3Box.innerHTML = `<p class="profile-error">Erreur : ${err.message}</p>`;
@@ -526,5 +611,21 @@ safe('notations', () => {
   document.getElementById('notations-btn').addEventListener('click', openNotationsModal);
   document.getElementById('close-notations-btn').addEventListener('click', () => {
     document.getElementById('notations-modal').hidden = true;
+  });
+
+  const followInput = document.getElementById('notations-follow-input');
+  const followBtn = document.getElementById('notations-follow-btn');
+
+  function followFromInput() {
+    const country = followInput.value.trim();
+    if (!country || !currentNotationsData) return;
+    addFollowedCountry(currentNotationsData.server.apiKey, country);
+    followInput.value = '';
+    renderFollowedCountries();
+  }
+
+  followBtn.addEventListener('click', followFromInput);
+  followInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') followFromInput();
   });
 });

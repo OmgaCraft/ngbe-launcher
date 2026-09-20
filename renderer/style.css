@@ -733,3 +733,26 @@ html, body {
   padding: 8px;
   background: var(--panel-alt);
 }
+
+.notations-followed-title {
+  margin-top: 4px;
+  margin-bottom: -2px;
+}
+
+.notation-row .unfollow-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.notation-row .unfollow-btn:hover {
+  color: #e07a5f;
+}
+
+.notation-flag.flag-missing {
+  display: none;
+}
