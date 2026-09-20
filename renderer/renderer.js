@@ -450,26 +450,50 @@ const ARCH_LABELS = {
   roleplayPays: 'Roleplay',
   organics: 'Organique',
   beaute: 'Beauté',
-  bonusChunks: 'Bonus chunks',
-  bonusChunksPalier: 'Palier bonus chunks',
   multiplicateurSurfaceConstruite: 'Multiplicateur surface',
   noteAuteur: 'Auteur de la note',
   source: 'Source',
-  noteMax: 'Note max',
 };
 
-function formatDetailValue(value) {
-  if (value === 0) return '<span class="zero-value">0</span>';
+// Not meaningful yet (always 0/null pending a future NG update) — hide them.
+// noteMax is folded into the Archi score line instead of shown on its own.
+const HIDDEN_ARCH_KEYS = new Set(['bonusChunks', 'bonusChunksPalier', 'noteMax']);
+
+// For these, 0 is the good outcome (no missile holes, no Schematica use) —
+// invert the usual red-means-zero coloring.
+const ZERO_IS_GOOD_ARCH_KEYS = new Set(['trouMissiles', 'utilisationSchematica']);
+
+function formatDetailValue(value, zeroIsGood) {
+  if (value === 0) {
+    return zeroIsGood ? '<span class="good-value">0</span>' : '<span class="zero-value">0</span>';
+  }
+  if (zeroIsGood && typeof value === 'number') {
+    return `<span class="zero-value">${value}</span>`;
+  }
   return value ?? '—';
 }
 
 function buildDetailHtml(nation) {
+  const archBreakdown = nation.archBreakdown || {};
+  const noteMax = archBreakdown.noteMax;
+
   const scoreEntries = Object.entries(nation.scores || {})
-    .map(([key, value]) => `<div><span class="key">${NOTATION_SCORE_LABELS[key] || key.toUpperCase()}</span>: ${formatDetailValue(value)}</div>`)
+    .map(([key, value]) => {
+      const label = NOTATION_SCORE_LABELS[key] || key.toUpperCase();
+      if (key === 'arch' && noteMax != null) {
+        const isMax = value === noteMax;
+        const display = `${value} / ${noteMax}`;
+        return `<div><span class="key">${label}</span>: ${isMax ? `<span class="good-value">${display}</span>` : display}</div>`;
+      }
+      return `<div><span class="key">${label}</span>: ${formatDetailValue(value)}</div>`;
+    })
     .join('');
-  const archEntries = Object.entries(nation.archBreakdown || {})
-    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${formatDetailValue(value)}</div>`)
+
+  const archEntries = Object.entries(archBreakdown)
+    .filter(([key]) => !HIDDEN_ARCH_KEYS.has(key))
+    .map(([key, value]) => `<div><span class="key">${ARCH_LABELS[key] || key}</span>: ${formatDetailValue(value, ZERO_IS_GOOD_ARCH_KEYS.has(key))}</div>`)
     .join('');
+
   return `
     <div class="detail-header">
       <img class="notation-flag" src="${nation.flag || ''}" alt="" onerror="this.classList.add('flag-missing')" />

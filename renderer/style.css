@@ -838,6 +838,11 @@ html, body {
   font-weight: 700;
 }
 
+.good-value {
+  color: #4caf50;
+  font-weight: 700;
+}
+
 .notation-flag {
   width: 24px;
   height: 24px;
