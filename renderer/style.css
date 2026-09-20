@@ -658,6 +658,16 @@ html, body {
   width: 440px;
 }
 
+.notations-server-select {
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
 .notations-list {
   display: flex;
   flex-direction: column;

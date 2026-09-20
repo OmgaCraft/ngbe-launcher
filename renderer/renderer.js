@@ -544,10 +544,7 @@ function renderFollowedCountries() {
   });
 }
 
-async function openNotationsModal() {
-  const server = currentNotationsServer();
-  const modal = document.getElementById('notations-modal');
-  const serverLabel = document.getElementById('notations-modal-server');
+async function loadNotationsForServer(server) {
   const weekLabel = document.getElementById('notations-week');
   const top3Box = document.getElementById('notations-top3');
   const yourPositionBox = document.getElementById('notations-your-position');
@@ -556,16 +553,7 @@ async function openNotationsModal() {
   yourPositionBox.innerHTML = '';
   currentNotationsData = null;
   document.getElementById('notations-followed-list').innerHTML = '';
-  modal.hidden = false;
 
-  if (!server) {
-    serverLabel.textContent = 'aucun serveur';
-    weekLabel.textContent = '';
-    top3Box.innerHTML = '<p class="profile-error">Rejoins un serveur pour voir ses notations.</p>';
-    return;
-  }
-
-  serverLabel.textContent = server.name;
   weekLabel.textContent = 'Chargement...';
   top3Box.innerHTML = '';
 
@@ -606,7 +594,34 @@ async function openNotationsModal() {
   }
 }
 
+function openNotationsModal() {
+  const select = document.getElementById('notations-server-select');
+  const modal = document.getElementById('notations-modal');
+  modal.hidden = false;
+
+  if (!select.value) return;
+  const server = (config.servers || []).find((s) => s.apiKey === select.value);
+  if (server) loadNotationsForServer(server);
+}
+
 safe('notations', () => {
+  const select = document.getElementById('notations-server-select');
+  (config.servers || []).forEach((server) => {
+    if (!server.apiKey) return;
+    const opt = document.createElement('option');
+    opt.value = server.apiKey;
+    opt.textContent = server.name;
+    select.appendChild(opt);
+  });
+
+  const preferred = currentNotationsServer();
+  if (preferred) select.value = preferred.apiKey;
+
+  select.addEventListener('change', () => {
+    const server = (config.servers || []).find((s) => s.apiKey === select.value);
+    if (server) loadNotationsForServer(server);
+  });
+
   updateNotationsButtonLabel();
   document.getElementById('notations-btn').addEventListener('click', openNotationsModal);
   document.getElementById('close-notations-btn').addEventListener('click', () => {
