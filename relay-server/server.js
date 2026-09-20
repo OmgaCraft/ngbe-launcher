@@ -167,8 +167,8 @@ async function fetchNotations(server, week) {
 // without a token. Rather than embed a GitHub token in the app, this is
 // updated by hand each time a new Android build is published.
 const ANDROID_LATEST_VERSION = {
-  version: '0.3.0',
-  url: 'https://github.com/OmgaCraft/ngbe-launcher-android/releases/tag/v0.3.0',
+  version: '0.4.0',
+  url: 'https://github.com/OmgaCraft/ngbe-launcher-android/releases/tag/v0.4.0',
 };
 
 app.get('/', (_req, res) => {
