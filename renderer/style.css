@@ -576,6 +576,8 @@ html, body {
   padding: 24px;
   width: 420px;
   max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -656,8 +658,10 @@ html, body {
 
 .notations-modal-box {
   display: flex;
+  flex-direction: row;
   align-items: flex-start;
   width: auto;
+  max-width: 92vw;
 }
 
 .notations-main {
