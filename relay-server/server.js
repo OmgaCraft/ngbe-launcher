@@ -37,11 +37,31 @@ function rateLimit(req, res, next) {
 const CACHE_TTL_MS = 30 * 1000;
 const cache = new Map();
 
+// NG caps approved API keys at 60 req/min — this is a single shared key used
+// by every launcher instance, so it's tracked globally (not per client IP)
+// and only counts actual upstream calls, never cache hits.
+const NG_KEY_RATE_LIMIT = 60;
+const NG_KEY_WINDOW_MS = 60 * 1000;
+let ngKeyTimestamps = [];
+
+function reserveNgKeyRequest() {
+  const now = Date.now();
+  ngKeyTimestamps = ngKeyTimestamps.filter((t) => now - t < NG_KEY_WINDOW_MS);
+  if (ngKeyTimestamps.length >= NG_KEY_RATE_LIMIT) {
+    return false;
+  }
+  ngKeyTimestamps.push(now);
+  return true;
+}
+
 async function cachedFetch(key, url) {
   const now = Date.now();
   const hit = cache.get(key);
   if (hit && now - hit.ts < CACHE_TTL_MS) {
     return hit.data;
+  }
+  if (!reserveNgKeyRequest()) {
+    throw new Error('Limite de la clé API NationsGlory atteinte (60 req/min), réessaie dans un instant.');
   }
   const res = await fetch(url, {
     headers: {
