@@ -24,15 +24,26 @@
 
   <main>
     <div class="wrap">
-      <div class="download-card">
-        <h2 class="section-title">Télécharger NGBE Launcher</h2>
-        <p style="color: var(--muted); font-size: 13px; margin-bottom: 24px;">
-          Version portable pour Windows — aucune installation requise, exécute directement le fichier.
-        </p>
-        <a class="btn" href="https://github.com/OmgaCraft/ngbe-launcher/releases/latest/download/NGBE-Launcher.exe">
-          Télécharger le .exe
-        </a>
-        <p class="version">Windows 10/11 · 64 bits</p>
+      <div class="platform-grid" id="platform-grid">
+        <div class="download-card" id="windows-card">
+          <span class="platform-badge" id="windows-badge" hidden>Détecté pour toi</span>
+          <h2 class="section-title">Windows</h2>
+          <p class="card-desc">Version portable — aucune installation requise, exécute directement le fichier.</p>
+          <a class="btn" href="https://github.com/OmgaCraft/ngbe-launcher/releases/latest/download/NGBE-Launcher.exe">
+            Télécharger le .exe
+          </a>
+          <p class="version" id="windows-version">Windows 10/11 · 64 bits</p>
+        </div>
+
+        <div class="download-card" id="android-card">
+          <span class="platform-badge" id="android-badge" hidden>Détecté pour toi</span>
+          <h2 class="section-title">Android</h2>
+          <p class="card-desc" id="android-desc">Bientôt disponible.</p>
+          <a class="btn secondary" id="android-download-btn" href="https://github.com/OmgaCraft/ngbe-launcher-android/releases">
+            Voir le dépôt
+          </a>
+          <p class="version" id="android-version"></p>
+        </div>
       </div>
 
       <div class="notice">
@@ -54,5 +65,7 @@
       <p>NGBE Launcher — projet communautaire non affilié à NationsGlory.</p>
     </div>
   </footer>
+
+  <script src="platform.js"></script>
 </body>
 </html>

@@ -3,12 +3,17 @@
 define('GITHUB_REPO', 'OmgaCraft/ngbe-launcher');
 define('DOWNLOAD_URL', 'https://github.com/' . GITHUB_REPO . '/releases/latest/download/NGBE-Launcher.exe');
 
+define('ANDROID_REPO', 'OmgaCraft/ngbe-launcher-android');
+define('ANDROID_RELEASES_URL', 'https://github.com/' . ANDROID_REPO . '/releases');
+
 /**
- * Fetches the latest release version from GitHub, cached to a temp file
- * for a few minutes so we don't hit the API on every page load.
+ * Fetches a repo's latest GitHub release (tag, html_url, matching asset
+ * download URL), cached to a temp file for a few minutes per repo so we
+ * don't hit the API on every page load. Returns null if there's no
+ * release yet or the request fails — callers should degrade gracefully.
  */
-function ngbe_fetch_latest_release() {
-    $cacheFile = sys_get_temp_dir() . '/ngbe_latest_release.json';
+function ngbe_fetch_latest_release($repo, $assetSuffix = null) {
+    $cacheFile = sys_get_temp_dir() . '/ngbe_latest_release_' . md5($repo) . '.json';
     $cacheTtl = 300;
 
     if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
@@ -18,7 +23,7 @@ function ngbe_fetch_latest_release() {
         }
     }
 
-    $url = 'https://api.github.com/repos/' . GITHUB_REPO . '/releases/latest';
+    $url = 'https://api.github.com/repos/' . $repo . '/releases/latest';
     $response = false;
 
     if (function_exists('curl_init')) {
@@ -52,10 +57,28 @@ function ngbe_fetch_latest_release() {
         return null;
     }
 
+    $assetUrl = null;
+    if ($assetSuffix && !empty($data['assets'])) {
+        foreach ($data['assets'] as $asset) {
+            if (substr($asset['name'], -strlen($assetSuffix)) === $assetSuffix) {
+                $assetUrl = $asset['browser_download_url'];
+                break;
+            }
+        }
+    }
+
     $result = [
         'version' => $data['tag_name'],
+        'html_url' => $data['html_url'],
+        'asset_url' => $assetUrl,
     ];
     @file_put_contents($cacheFile, json_encode($result));
 
     return $result;
+}
+
+/** Very small check — only distinguishes Android from everything else for now. */
+function ngbe_is_android_visitor() {
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+    return stripos($ua, 'android') !== false;
 }

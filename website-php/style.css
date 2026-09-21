@@ -164,18 +164,52 @@ main {
   line-height: 1.5;
 }
 
+.platform-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
 .download-card {
+  position: relative;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 36px;
+  padding: 36px 28px;
   text-align: center;
+}
+
+.download-card .card-desc {
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 20px;
+  min-height: 36px;
 }
 
 .download-card .version {
   color: var(--muted);
   font-size: 12px;
   margin-top: 14px;
+}
+
+.platform-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+@media (max-width: 640px) {
+  .platform-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .notice {
