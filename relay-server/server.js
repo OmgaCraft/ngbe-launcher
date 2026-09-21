@@ -163,20 +163,8 @@ async function fetchNotations(server, week) {
   return result;
 }
 
-// The Android repo is private, so its GitHub releases API isn't reachable
-// without a token. Rather than embed a GitHub token in the app, this is
-// updated by hand each time a new Android build is published.
-const ANDROID_LATEST_VERSION = {
-  version: '0.4.0',
-  url: 'https://github.com/OmgaCraft/ngbe-launcher-android/releases/tag/v0.4.0',
-};
-
 app.get('/', (_req, res) => {
   res.json({ status: 'ok', service: 'NGBE Launcher relay' });
-});
-
-app.get('/android-version', (_req, res) => {
-  res.json(ANDROID_LATEST_VERSION);
 });
 
 app.get('/articles', async (_req, res) => {
