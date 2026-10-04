@@ -6,6 +6,11 @@ function safe(label, fn) {
   }
 }
 
+// Electron wraps main-process errors as "Error invoking remote method 'x': Error: msg".
+function friendlyError(err) {
+  return String((err && err.message) || err).replace(/^Error invoking remote method '[^']+': (Error: )?/, '');
+}
+
 const config = window.ngbe.getServerConfig();
 
 function connectUri(address, port) {
@@ -17,8 +22,10 @@ function rememberServer(name) {
   const el = document.getElementById('last-server');
   if (el) el.textContent = name;
 
+  // The profile already holds every server's stats, so joining another server
+  // only needs a re-render — not a new round of API calls.
   const summary = document.getElementById('info-summary');
-  if (summary && !summary.hidden) refreshProfile();
+  if (summary && !summary.hidden && cachedPlayerData) renderServerStats(cachedPlayerData.servers);
 
   updateNotationsButtonLabel();
 }
@@ -50,6 +57,11 @@ function ngLogoSvg(color) {
 
 function formatDate(value) {
   if (!value) return '—';
+  // The API publishes the last login as a day only (no time of day).
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-');
+    return `${d}/${m}/${y}`;
+  }
   const d = new Date(value.replace(' ', 'T'));
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString('fr-FR', {
@@ -244,7 +256,7 @@ safe('articles', async () => {
       list.appendChild(el);
     });
   } catch (err) {
-    list.innerHTML = `<span class="profile-error">Impossible de charger les actualités (${err.message})</span>`;
+    list.innerHTML = `<span class="profile-error">Impossible de charger les actualités (${friendlyError(err)})</span>`;
   }
 });
 
@@ -288,7 +300,7 @@ safe('player-count', async () => {
     const entry = data[apiKey];
     if (!entry) return;
     const count = typeof entry === 'object' ? entry.players : entry;
-    if (count === undefined) return;
+    if (count == null) return;
     const badge = document.createElement('span');
     badge.className = 'server-count';
     badge.textContent = `${count} connecté${count === 1 ? '' : 's'}`;
@@ -302,10 +314,12 @@ function setLocked(locked) {
   document.getElementById('info-gear').hidden = !locked;
 }
 
-function formatPlaytime(seconds) {
-  if (!seconds) return '0 h';
-  return `${Math.round(seconds / 3600)} h`;
-}
+const COUNTRY_ROLE_LABELS = {
+  LEADER: 'Chef',
+  OFFICER: 'Officier',
+  MEMBER: 'Membre',
+  RECRUIT: 'Recrue',
+};
 
 function renderServerStats(playerServers) {
   const box = document.getElementById('profile-servers');
@@ -333,8 +347,8 @@ function renderServerStats(playerServers) {
   const details = document.createElement('span');
   details.className = 'profile-server-stats';
   const country = stats.country || '—';
-  const rank = stats.country_rank || '—';
-  details.textContent = `Pays : ${country} · Rang : ${rank} · Temps : ${formatPlaytime(stats.playtime)}`;
+  const role = COUNTRY_ROLE_LABELS[stats.role] || '—';
+  details.textContent = `Pays : ${country} · Rang : ${role}`;
 
   row.appendChild(icon);
   row.appendChild(name);
@@ -353,24 +367,23 @@ async function refreshProfile() {
   });
 
   const usernameEl = document.getElementById('profile-username');
-  const crownEl = document.getElementById('profile-crown');
   const descEl = document.getElementById('profile-description');
   const lastConnEl = document.getElementById('profile-last-connection');
 
   usernameEl.textContent = pseudo;
   descEl.textContent = 'Chargement...';
+  cachedPlayerData = null;
 
   try {
     const data = await window.ngbe.getPlayerInfo(pseudo);
     cachedPlayerData = data;
     usernameEl.textContent = data.username || pseudo;
-    crownEl.hidden = !data.is_prime;
     descEl.textContent = data.description || 'Aucune description.';
     descEl.classList.remove('profile-error');
     lastConnEl.textContent = formatDate(data.last_connection);
     renderServerStats(data.servers);
   } catch (err) {
-    descEl.textContent = `Erreur : ${err.message}`;
+    descEl.textContent = `Erreur : ${friendlyError(err)}`;
     descEl.classList.add('profile-error');
   }
 }
@@ -803,7 +816,7 @@ async function loadNotations(value, week) {
     renderFollowedCountries();
   } catch (err) {
     weekLabel.textContent = '';
-    top3Box.innerHTML = `<p class="profile-error">Erreur : ${err.message}</p>`;
+    top3Box.innerHTML = `<p class="profile-error">Erreur : ${friendlyError(err)}</p>`;
   }
 }
 

@@ -58,7 +58,13 @@ async function relayGet(pathSegment) {
   }
   const res = await fetch(`${baseUrl}${pathSegment}`);
   if (!res.ok) {
-    throw new Error(`Le relais a répondu ${res.status}`);
+    let detail = '';
+    try {
+      detail = (await res.json()).error || '';
+    } catch (err) {
+      // body wasn't JSON — the status alone will do
+    }
+    throw new Error(detail || `Le relais a répondu ${res.status}`);
   }
   return res.json();
 }
